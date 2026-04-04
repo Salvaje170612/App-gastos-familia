@@ -1,0 +1,16 @@
+{
+  "name": "Control Gastos Familia",
+  "short_name": "Gastos",
+  "description": "App para controlar gastos familiares",
+  "start_url": "/App-gastos-familia/",
+  "display": "standalone",
+  "background_color": "#1E3A8A",
+  "theme_color": "#1E3A8A",
+  "icons": [
+    {
+      "src": "https://em-content.zobj.net/source/apple/391/money-bag_1f4b0.png",
+      "sizes": "160x160",
+      "type": "image/png"
+    }
+  ]
+}
