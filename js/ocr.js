@@ -51,14 +51,14 @@ async function processReceiptOCR(base64Image) {
 
 function guessCategory(itemName) {
   const name = itemName.toLowerCase();
-  if (name.match(/coca|pepsi|agua|jugo|refresco|leche|yogurt|queso|jamon|pollo|carne|fruta|verdura|pan|tortilla|cereal|cafe|arroz|frijol|atun|sopa|galleta|chocolate|dulce|candy|snack|botana|hamburgu|fresa|uva|pretzel|brioche/)) return 'Supermercado';
+  if (name.match(/hambur|fresa|uva|verdura|fruta|pollo|carne|leche|queso|jamon|pan|tortilla|cereal|cafe|arroz|frijol|atun|sopa|galleta|chocolate|dulce|candy|snack|botana|pretzel|brioche|bollo|agua|jugo|refresco|yogurt|pepsi|coca|walmart|super|costco|soriana|chedraui/)) return 'Supermercado';
   if (name.match(/flor|flores|regalo|regalos|present|bouquet/)) return 'Regalos';
   if (name.match(/gasolina|gas|pemex|combustible|diesel/)) return 'Gasolina';
   if (name.match(/restaurant|taco|pizza|burger|sushi|comida|almuerzo|cena|desayuno|coffee/)) return 'Restaurantes';
   if (name.match(/amazon|envio|shipping|delivery|paquete/)) return 'Amazon';
-  if (name.match(/doctor|medico|medicina|farmacia|hospital|clinica|pastilla|vitamina|minoxidil|protein/)) return 'Salud';
+  if (name.match(/doctor|medico|medicina|farmacia|hospital|clinica|pastilla|vitamina|minoxidil|protein|vital/)) return 'Salud';
   if (name.match(/gym|ejercicio|deporte|sport|fitness/)) return 'Gym';
-  if (name.match(/ropa|camisa|pantalon|zapato|vestido|playera|blusa|conjunto|hurley|short/)) return 'Ropa';
+  if (name.match(/ropa|camisa|pantalon|zapato|vestido|playera|blusa|conjunto|hurley|short|dama|cabal/)) return 'Ropa';
   if (name.match(/luz|internet|telefono|cable|electricidad/)) return 'Servicios';
   if (name.match(/colegio|escuela|school|utiles|libro|cuaderno/)) return 'Colegio';
   return 'Otros';
@@ -70,7 +70,7 @@ function parseReceiptItems(text) {
   
   const skipWords = ['total', 'subtotal', 'iva', 'tax', 'cambio', 'efectivo', 'tarjeta', 'ticket', 'folio', 'fecha', 'gracias', 'rfc', 'tel', 'direccion', 'calle', 'col', 'cp', 'descuento', 'cupon'];
 
-  // First try: same line format "Item name 50.00"
+  // First try: same line format
   for (const line of lines) {
     const match = line.trim().match(/^(.+?)\s+(\d{1,6}[.,]\d{2})\s*[A-Za-z*-]?\s*$/);
     if (match) {
@@ -122,7 +122,6 @@ function parseReceiptItems(text) {
     }
   }
 
-  // Fallback to total
   if (items.length === 0) {
     const totalMatch = text.match(/total[\s:$]*(\d+\.?\d{0,2})/i);
     if (totalMatch) {
@@ -141,9 +140,7 @@ function parseReceiptItems(text) {
 function showLineItems(items) {
   const ocrResults = document.getElementById('ocrResults');
   const cameraContainer = document.querySelector('.camera-container');
-  
   cameraContainer.style.display = 'none';
-  
   const categories = ['Casa', 'Colegio', 'Mama-Reposo', 'Mama-Medicinas', 'Empleadas', 'Servicios', 'Supermercado', 'Restaurantes', 'Amazon', 'Gasolina', 'Salud', 'Gym', 'Ropa', 'Regalos', 'Mantenimiento', 'Viajes', 'Otros'];
 
   ocrResults.style.display = 'block';
@@ -151,16 +148,16 @@ function showLineItems(items) {
     <h3 style="margin-bottom:16px;">🧾 Artículos Detectados (${items.length})</h3>
     <div id="lineItemsList">
       ${items.map((item, i) => `
-        <div style="background:white; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #E2E8F0;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <input type="text" value="${item.name}" id="itemName_${i}" style="flex:1; padding:6px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px; margin-right:8px;">
-            <input type="number" value="${item.amount}" id="itemAmount_${i}" style="width:80px; padding:6px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px;">
+        <div style="background:white;padding:12px;border-radius:10px;margin-bottom:10px;border:1px solid #E2E8F0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <input type="text" value="${item.name}" id="itemName_${i}" style="flex:1;padding:6px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;margin-right:8px;">
+            <input type="number" value="${item.amount}" id="itemAmount_${i}" style="width:80px;padding:6px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
           </div>
-          <div style="display:flex; gap:8px;">
-            <select id="itemCategory_${i}" style="flex:1; padding:6px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px;">
+          <div style="display:flex;gap:8px;">
+            <select id="itemCategory_${i}" style="flex:1;padding:6px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
               ${categories.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
             </select>
-            <select id="itemSource_${i}" style="flex:1; padding:6px; border:1px solid #E2E8F0; border-radius:6px; font-size:13px;">
+            <select id="itemSource_${i}" style="flex:1;padding:6px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;">
               <option value="Familiar">💰 Familiar</option>
               <option value="Carlos">👔 Carlos</option>
               <option value="Nana">👜 Nana</option>
@@ -170,11 +167,12 @@ function showLineItems(items) {
       `).join('')}
     </div>
     <button class="btn-primary" onclick="saveAllLineItems(${items.length})" style="margin-top:12px;">✅ Guardar Todo (${items.length} artículos)</button>
-    <button class="btn-secondary" onclick="cancelOCR()" style="margin-top:8px; width:100%;">❌ Cancelar</button>
+    <button class="btn-secondary" onclick="cancelOCR()" style="margin-top:8px;width:100%;">❌ Cancelar</button>
   `;
 }
 
 async function saveAllLineItems(count) {
+  const user = window.currentUser || null;
   let saved = 0;
   for (let i = 0; i < count; i++) {
     const name = document.getElementById(`itemName_${i}`)?.value;
@@ -183,7 +181,7 @@ async function saveAllLineItems(count) {
     const source = document.getElementById(`itemSource_${i}`)?.value;
     if (name && amount && category) {
       const expense = {
-        user: currentUser.email,
+        user: user.email,
         name, amount, category, source,
         date: new Date().toISOString().split('T')[0],
         photo_url: null
@@ -192,7 +190,7 @@ async function saveAllLineItems(count) {
       if (success) saved++;
     }
   }
-  alert(`✅ ${saved} artículos guardados!`);
+  moneyRain();
   cancelOCR();
   await loadData();
   updateDashboard();
