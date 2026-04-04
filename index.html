@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Control Gastos Familia</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gastos">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="loginScreen" style="text-align:center; padding:80px 20px;">
+        <h1 style="font-size:48px;">💰</h1>
+        <h2 style="margin:16px 0; color:#1E3A8A;">Control Gastos Familia</h2>
+        <p style="color:#718096; margin-bottom:32px;">Inicia sesión para continuar</p>
+        <button onclick="window.signInWithGoogle()" style="background:white; border:2px solid #E2E8F0; padding:14px 28px; border-radius:10px; font-size:16px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            🔐 Iniciar sesión con Google
+        </button>
+    </div>
+
+    <div id="mainApp" style="display:none;">
+        <div class="header">
+            <h1>💰 Control Financiero</h1>
+            <div class="subtitle" id="currentDate"></div>
+            <div style="font-size:13px; opacity:0.8; margin-top:4px;">
+                <span id="userName"></span> • 
+                <span onclick="window.signOut()" style="cursor:pointer; text-decoration:underline;">Cerrar sesión</span>
+                 • <span onclick="showBudgetEditor()" style="cursor:pointer; text-decoration:underline;">✏️ Editar presupuesto</span>
+            </div>
+        </div>
+
+        <div class="app-container">
+            <!-- Month Selector -->
+            <div style="display:flex; align-items:center; justify-content:center; gap:16px; padding:16px 0 0 0;">
+                <button onclick="changeMonth(-1)" style="background:white; border:2px solid #E2E8F0; border-radius:10px; padding:8px 16px; font-size:18px; cursor:pointer;">◀</button>
+                <span id="selectedMonth" style="font-size:16px; font-weight:700; color:#1E3A8A; min-width:150px; text-align:center;"></span>
+                <button onclick="changeMonth(1)" style="background:white; border:2px solid #E2E8F0; border-radius:10px; padding:8px 16px; font-size:18px; cursor:pointer;">▶</button>
+            </div>
+
+            <section class="summary-section">
+                <div class="summary-card">
+                    <div class="summary-row">
+                        <span class="summary-label">Ingreso Mensual</span>
+                        <span class="summary-value positive" id="monthlyIncome">$450,000</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Gastado Este Mes</span>
+                        <span class="summary-value negative" id="totalSpent">$0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Disponible</span>
+                        <span class="summary-value" id="available">$450,000</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Progreso del mes</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHART SECTION -->
+            <section class="add-expense-section" style="margin-top:16px;">
+                <h2 class="section-title">📊 Gastos por Categoría</h2>
+                <canvas id="expenseChart" style="width:100%; max-height:300px;"></canvas>
+                <p id="chartEmpty" style="text-align:center; color:#718096; padding:20px; display:none;">No hay gastos este mes</p>
+            </section>
+
+            <section class="add-expense-section">
+                <h2 class="section-title">➕ Registrar Gasto</h2>
+                <div class="tabs">
+                    <button class="tab active" data-tab="manual">✍️ Manual</button>
+                    <button class="tab" data-tab="photo">📸 Foto</button>
+                </div>
+
+                <div id="tabManual" class="tab-content active">
+                    <div class="input-group">
+                        <input type="number" id="expenseAmount" placeholder="💵 Monto" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <select id="expenseCategory">
+                            <option value="">Categoría</option>
+                            <option value="Casa">🏠 Casa - Renta</option>
+                            <option value="Colegio">🎓 Colegio Greengates</option>
+                            <option value="Mama-Reposo">💝 Mamá - Casa Reposo</option>
+                            <option value="Mama-Medicinas">💊 Mamá - Medicinas</option>
+                            <option value="Empleadas">👥 Empleadas</option>
+                            <option value="Servicios">💡 Servicios</option>
+                            <option value="Supermercado">🛒 Supermercado/Comida</option>
+                            <option value="Restaurantes">🍽️ Restaurantes</option>
+                            <option value="Amazon">📦 Amazon</option>
+                            <option value="Gasolina">⛽ Gasolina</option>
+                            <option value="Salud">🏥 Salud/Doctor</option>
+                            <option value="Gym">💪 Gym/Actividades</option>
+                            <option value="Ropa">👗 Ropa/Personal</option>
+                            <option value="Regalos">🎁 Regalos</option>
+                            <option value="Mantenimiento">🔧 Mantenimiento</option>
+                            <option value="Viajes">✈️ Viajes</option>
+                            <option value="Otros">📌 Otros</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <select id="expenseSource">
+                            <option value="Familiar">💰 Presupuesto Familiar</option>
+                            <option value="Carlos">👔 Personal Carlos</option>
+                            <option value="Nana">👜 Personal Nana</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="expenseName" placeholder="Descripción (opcional)">
+                    </div>
+                    <button class="btn-primary" onclick="saveManualExpense()">💾 Guardar</button>
+                </div>
+
+                <div id="tabPhoto" class="tab-content">
+                    <div class="camera-container">
+                        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+                        <button class="btn-camera" onclick="document.getElementById('cameraInput').click()">
+                            📸 Tomar Foto de Factura
+                        </button>
+                        <img id="previewImage" style="max-width:100%; display:none;">
+                    </div>
+                    <div id="ocrResults" style="display:none;"></div>
+                </div>
+            </section>
+
+            <!-- EXPORT BUTTON -->
+            <section class="add-expense-section">
+                <h2 class="section-title">📤 Exportar Datos</h2>
+                <button class="btn-primary" onclick="exportToExcel()">📊 Exportar a Excel</button>
+            </section>
+
+            <section class="expenses-section">
+                <h2 class="section-title">📝 Gastos Recientes</h2>
+                <div id="expensesList"></div>
+            </section>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/sheets.js"></script>
+    <script src="js/ocr.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
