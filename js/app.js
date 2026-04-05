@@ -79,7 +79,6 @@ function applyTheme(theme) {
     chick.id = 'easterChick';
     chick.textContent = '🐣';
     document.body.appendChild(chick);
- 
   } else if (theme === 'halloween') {
     body.classList.add('theme-halloween');
     if (header) header.style.background = 'repeating-linear-gradient(45deg,#f97316,#f97316 20px,#1c1917 20px,#1c1917 40px)';
@@ -105,7 +104,6 @@ function applyTheme(theme) {
       .progress-fill{background:linear-gradient(90deg,#92400e,#f97316)!important;}
       .progress-bar{background:#292524!important;}
     `;
- 
   } else if (theme === 'christmas') {
     body.classList.add('theme-christmas');
     if (header) header.style.background = 'linear-gradient(135deg,#166534 0%,#dc2626 100%)';
@@ -217,19 +215,32 @@ function updateDashboard() {
     const d = new Date(e.date);
     return d.getMonth() === selectedDate.getMonth() && d.getFullYear() === selectedDate.getFullYear();
   });
+ 
   const totalSpent = thisMonth.filter(e => e.source === 'Familiar').reduce((sum, e) => sum + e.amount, 0);
   const available = CONFIG.MONTHLY_INCOME - totalSpent;
   const percentage = (totalSpent / CONFIG.MONTHLY_INCOME * 100).toFixed(1);
+  const savings = CONFIG.MONTHLY_INCOME - totalSpent;
+ 
   document.getElementById('monthlyIncome').textContent = formatMoney(CONFIG.MONTHLY_INCOME);
   document.getElementById('totalSpent').textContent = formatMoney(totalSpent);
   document.getElementById('available').textContent = formatMoney(available);
   document.getElementById('available').className = available >= 0 ? 'summary-value positive' : 'summary-value negative';
   document.getElementById('progressPercent').textContent = `${percentage}%`;
+ 
+  // Update savings
+  const savingsEl = document.getElementById('savingsAmount');
+  if (savingsEl) {
+    savingsEl.textContent = formatMoney(savings);
+    savingsEl.className = savings >= 0 ? 'summary-value positive' : 'summary-value negative';
+  }
+ 
   const progressFill = document.getElementById('progressFill');
   progressFill.style.width = `${Math.min(percentage, 100)}%`;
   progressFill.className = percentage > 100 ? 'progress-fill over' : (percentage > 80 ? 'progress-fill warning' : 'progress-fill');
+ 
   updateExpensesList(thisMonth);
   updateChart(thisMonth);
+  updateCategoryPanel(thisMonth);
 }
  
 function updateChart(thisMonth) {
@@ -262,6 +273,45 @@ function updateChart(thisMonth) {
       }
     }
   });
+}
+ 
+function updateCategoryPanel(thisMonth) {
+  const panel = document.getElementById('categoryPanel');
+  if (!panel) return;
+ 
+  if (!thisMonth.length) {
+    panel.innerHTML = '<p class="empty-state">No hay gastos este mes</p>';
+    return;
+  }
+ 
+  const categoryTotals = {};
+  const total = thisMonth.reduce((sum, e) => sum + e.amount, 0);
+  
+  thisMonth.forEach(e => {
+    if (!categoryTotals[e.category]) categoryTotals[e.category] = 0;
+    categoryTotals[e.category] += e.amount;
+  });
+ 
+  // Sort by amount descending
+  const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+ 
+  const colors = ['#667eea','#764ba2','#f093fb','#f5576c','#4facfe','#43e97b','#fa709a','#fee140','#a18cd1','#4facfe','#d4fc79','#96e6a1'];
+ 
+  panel.innerHTML = sorted.map(([category, amount], i) => {
+    const pct = ((amount / total) * 100).toFixed(1);
+    const color = colors[i % colors.length];
+    return `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:600;color:#374151;">${category}</span>
+          <span style="font-size:13px;color:#6B7280;">${formatMoney(amount)} <strong style="color:${color}">${pct}%</strong></span>
+        </div>
+        <div style="background:#E5E7EB;border-radius:999px;height:8px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:999px;transition:width 0.5s ease;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
  
 function updateExpensesList(expensesToShow) {
