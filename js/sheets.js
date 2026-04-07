@@ -10,10 +10,8 @@ async function getExpenses() {
     const response = await fetch(SCRIPT_URL);
     const result = await response.json();
     
-    // Handle both old format (array) and new format ({data, budget})
     const rawData = Array.isArray(result) ? result : result.data;
     
-    // Update budget if available from sheets
     if (result.budget && result.budget !== CONFIG.MONTHLY_INCOME) {
       CONFIG.MONTHLY_INCOME = result.budget;
       localStorage.setItem('monthlyBudget', result.budget);
