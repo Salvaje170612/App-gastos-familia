@@ -8,8 +8,20 @@ async function loadSheetsAPI() {
 async function getExpenses() {
   try {
     const response = await fetch(SCRIPT_URL);
-    const data = await response.json();
-    const rows = data.slice(1); // Skip header row
+    const result = await response.json();
+    
+    // Handle both old format (array) and new format ({data, budget})
+    const rawData = Array.isArray(result) ? result : result.data;
+    
+    // Update budget if available from sheets
+    if (result.budget && result.budget !== CONFIG.MONTHLY_INCOME) {
+      CONFIG.MONTHLY_INCOME = result.budget;
+      localStorage.setItem('monthlyBudget', result.budget);
+      const el = document.getElementById('monthlyIncome');
+      if (el) el.textContent = `$${Math.round(result.budget).toLocaleString('es-MX')}`;
+    }
+    
+    const rows = rawData.slice(1);
     return rows.map(row => ({
       timestamp: row[0],
       user: row[1],
@@ -54,9 +66,20 @@ async function getBudgets() {
   return {
     'Casa': 160500,
     'Colegio': 120000,
+    'Mama-Reposo': 25000,
+    'Mama-Medicinas': 12000,
+    'Empleadas': 25600,
+    'Servicios': 19700,
     'Supermercado': 40000,
-    'Restaurantes': 15000,
-    'Amazon': 10000,
-    'Gasolina': 15000
+    'Restaurantes': 5000,
+    'Amazon': 3000,
+    'Gasolina': 3000,
+    'Salud': 10000,
+    'Gym': 6700,
+    'Ropa': 3000,
+    'Regalos': 3000,
+    'Mantenimiento': 5000,
+    'Viajes': 0,
+    'Otros': 5000
   };
 }
