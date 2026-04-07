@@ -5,6 +5,7 @@ let selectedDate = new Date();
 let tapCount = 0;
 let tapTimer = null;
 let currentTheme = 'default';
+let tendenciaChart = null;
 
 const DOG_IMAGE = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAyADIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCQnPemOzgDaAc+tNB7kgAdSegqGbULaND9+ZsdF+Vfz6/pSNVFy2RJERcNhSAw6g9qnkt42h5mjXBHzNxz6VlJdSOGaGRYzkHIXnH+NE2oyGbJYFT/AA7QwP1qdWJ6F+VMSMN2SDioXGDjNaLWs13D9rQKqlQcHg8cVSlhkQ/MpAPQ44NMRBiinbKKAL2r6ddzBEs4f3CDJGQCT6n1rn5LG7UnMLcda668jimI8xnJ7AMf5ViJdLILiJyQ8bdxgj049O1IupVlShexVi0WZrYT7mRj1AHIqewjOn3YdpEfb1AGDz70Xl5cWsguIGYxMfmH8J9Qfeo4LiUzNdQRhdvIB5//AF0IhSc4qT6m99umu12W4VyBufJ6c+lWrO4SWNo3VSO46iufkfZLvMYJf5iegPsMVuWSwiHdHgBuTz09qYic6bZk58o8+jGirAYkA8/lRSuBkzBhN8wOCKwtZgktrpb2Lo3BPv7/AFrqZkjuVAcdOmDjFQSaUkqkedIVP8JOR+tCRtOSlGzRz4RL21E6DaQDmNgdue+KoxmSEfu3K8/cNdW2mRhQp5I5GTxVebRRcYBwvsq4zQlYwhzRjYbpdrDdpvlLGM8ANwM96v29msBYRt8vp7VLY2ItIBGvTOcelWgg9abl2GR7fYfkaKlwo/yaKkDDsnZolLMScnkmtWI8D60UVZp0JMZxmpUGE44ooqWTIaeg/Gk/goooIIT1NFFFMR//2Q==';
 
@@ -227,7 +228,6 @@ function updateDashboard() {
   document.getElementById('available').className = available >= 0 ? 'summary-value positive' : 'summary-value negative';
   document.getElementById('progressPercent').textContent = `${percentage}%`;
 
-  // Update savings
   const savingsEl = document.getElementById('savingsAmount');
   if (savingsEl) {
     savingsEl.textContent = formatMoney(savings);
@@ -279,25 +279,15 @@ function updateChart(thisMonth) {
 function updateCategoryPanel(thisMonth) {
   const panel = document.getElementById('categoryPanel');
   if (!panel) return;
-
-  if (!thisMonth.length) {
-    panel.innerHTML = '<p class="empty-state">No hay gastos este mes</p>';
-    return;
-  }
-
+  if (!thisMonth.length) { panel.innerHTML = '<p class="empty-state">No hay gastos este mes</p>'; return; }
   const categoryTotals = {};
   const total = thisMonth.reduce((sum, e) => sum + e.amount, 0);
-  
   thisMonth.forEach(e => {
     if (!categoryTotals[e.category]) categoryTotals[e.category] = 0;
     categoryTotals[e.category] += e.amount;
   });
-
-  // Sort by amount descending
   const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
-
   const colors = ['#667eea','#764ba2','#f093fb','#f5576c','#4facfe','#43e97b','#fa709a','#fee140','#a18cd1','#4facfe','#d4fc79','#96e6a1'];
-
   panel.innerHTML = sorted.map(([category, amount], i) => {
     const pct = ((amount / total) * 100).toFixed(1);
     const color = colors[i % colors.length];
@@ -313,6 +303,54 @@ function updateCategoryPanel(thisMonth) {
       </div>
     `;
   }).join('');
+}
+
+function updateTendencia() {
+  const canvas = document.getElementById('tendenciaChart');
+  const empty = document.getElementById('tendenciaEmpty');
+  if (!canvas) return;
+
+  const monthlyTotals = {};
+  expenses.forEach(e => {
+    const d = new Date(e.date);
+    if (isNaN(d)) return;
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    if (!monthlyTotals[key]) monthlyTotals[key] = { label, gastado: 0 };
+    if (e.source === 'Familiar') monthlyTotals[key].gastado += e.amount;
+  });
+
+  const sorted = Object.entries(monthlyTotals).sort((a, b) => a[0].localeCompare(b[0]));
+
+  if (sorted.length < 1) { canvas.style.display = 'none'; empty.style.display = 'block'; return; }
+
+  canvas.style.display = 'block';
+  empty.style.display = 'none';
+
+  const labels = sorted.map(([_, v]) => v.label);
+  const gastadoData = sorted.map(([_, v]) => v.gastado);
+  const presupuestoData = sorted.map(() => CONFIG.MONTHLY_INCOME);
+
+  if (tendenciaChart) tendenciaChart.destroy();
+
+  tendenciaChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Presupuesto', data: presupuestoData, borderColor: '#43e97b', backgroundColor: 'rgba(67,233,123,0.1)', borderWidth: 2, pointRadius: 4, tension: 0.3, fill: true },
+        { label: 'Gastos', data: gastadoData, borderColor: '#f5576c', backgroundColor: 'rgba(245,87,108,0.1)', borderWidth: 2, pointRadius: 4, tension: 0.3, fill: true }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: function(context) { return ` $${Math.round(context.parsed.y).toLocaleString('es-MX')}`; }}}
+      },
+      scales: { y: { ticks: { callback: function(value) { return '$' + Math.round(value/1000) + 'k'; }}}}
+    }
+  });
 }
 
 function updateExpensesList(expensesToShow) {
@@ -388,7 +426,7 @@ function exportToExcel() {
   XLSX.writeFile(wb, `gastos-familia-${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
-function showBudgetEditor() {
+async function showBudgetEditor() {
   const current = CONFIG.MONTHLY_INCOME;
   const newBudget = prompt(`Presupuesto mensual actual: $${current.toLocaleString('es-MX')}\n\nIngresa el nuevo presupuesto:`);
   if (newBudget && !isNaN(newBudget)) {
@@ -396,95 +434,16 @@ function showBudgetEditor() {
     localStorage.setItem('monthlyBudget', newBudget);
     document.getElementById('monthlyIncome').textContent = formatMoney(parseFloat(newBudget));
     updateDashboard();
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'updateBudget', budget: parseFloat(newBudget) })
+      });
+    } catch (e) {
+      console.error('Error syncing budget:', e);
+    }
     alert(`✅ Presupuesto actualizado a $${parseFloat(newBudget).toLocaleString('es-MX')}`);
   }
-}
-
-let tendenciaChart = null;
-
-function updateTendencia() {
-  const canvas = document.getElementById('tendenciaChart');
-  const empty = document.getElementById('tendenciaEmpty');
-  if (!canvas) return;
-
-  const monthlyTotals = {};
-  
-  expenses.forEach(e => {
-    const d = new Date(e.date);
-    if (isNaN(d)) return;
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
-    if (!monthlyTotals[key]) monthlyTotals[key] = { label, gastado: 0 };
-    if (e.source === 'Familiar') monthlyTotals[key].gastado += e.amount;
-  });
-
-  const sorted = Object.entries(monthlyTotals).sort((a, b) => a[0].localeCompare(b[0]));
-
-  if (sorted.length < 1) {
-    canvas.style.display = 'none';
-    empty.style.display = 'block';
-    return;
-  }
-
-  canvas.style.display = 'block';
-  empty.style.display = 'none';
-
-  const labels = sorted.map(([_, v]) => v.label);
-  const gastadoData = sorted.map(([_, v]) => v.gastado);
-  const presupuestoData = sorted.map(() => CONFIG.MONTHLY_INCOME);
-
-  if (tendenciaChart) tendenciaChart.destroy();
-
-  tendenciaChart = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Presupuesto',
-          data: presupuestoData,
-          borderColor: '#43e97b',
-          backgroundColor: 'rgba(67,233,123,0.1)',
-          borderWidth: 2,
-          pointRadius: 4,
-          tension: 0.3,
-          fill: true
-        },
-        {
-          label: 'Gastos',
-          data: gastadoData,
-          borderColor: '#f5576c',
-          backgroundColor: 'rgba(245,87,108,0.1)',
-          borderWidth: 2,
-          pointRadius: 4,
-          tension: 0.3,
-          fill: true
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return ` $${Math.round(context.parsed.y).toLocaleString('es-MX')}`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: function(value) {
-              return '$' + Math.round(value/1000) + 'k';
-            }
-          }
-        }
-      }
-    }
-  });
 }
 
 function formatMoney(amount) { return `$${Math.round(amount).toLocaleString('es-MX')}`; }
