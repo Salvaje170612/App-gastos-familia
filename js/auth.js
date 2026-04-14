@@ -17,13 +17,13 @@ script1.onload = function() {
     window.auth = firebase.auth();
 
     const allowedEmails = [
-      'Carlosrojasgirao@gmail.com',
+      'carlosrojasgirao@gmail.com',
       'Catherineberaun@gmail.com', 
       'sr17062012@gmail.com'
     ];
 
     window.auth.onAuthStateChanged(function(user) {
-      if (user && allowedEmails.includes(user.email)) {
+     if (user && allowedEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase())) {
         window.currentUser = { email: user.email, name: user.displayName };
         document.getElementById('userName').textContent = user.displayName;
         document.getElementById('loginScreen').style.display = 'none';
