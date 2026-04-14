@@ -18,12 +18,12 @@ script1.onload = function() {
 
     const allowedEmails = [
       'carlosrojasgirao@gmail.com',
-      'Catherineberaun@gmail.com', 
+      'catherineberaun@gmail.com',
       'sr17062012@gmail.com'
     ];
 
     window.auth.onAuthStateChanged(function(user) {
-     if (user && allowedEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase())) {
+      if (user && allowedEmails.includes(user.email.toLowerCase())) {
         window.currentUser = { email: user.email, name: user.displayName };
         document.getElementById('userName').textContent = user.displayName;
         document.getElementById('loginScreen').style.display = 'none';
@@ -31,7 +31,7 @@ script1.onload = function() {
         loadSheetsAPI().then(() => {
           loadData().then(() => updateDashboard());
         });
-      } else if (user && !allowedEmails.includes(user.email)) {
+      } else if (user && !allowedEmails.includes(user.email.toLowerCase())) {
         alert('❌ No tienes permiso para usar esta app');
         window.auth.signOut();
       } else {
