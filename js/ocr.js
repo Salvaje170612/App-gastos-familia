@@ -10,10 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
         img.src = event.target.result;
         img.style.display = 'block';
         
-        // Show loading message
         const ocrResults = document.getElementById('ocrResults');
         ocrResults.style.display = 'block';
-        ocrResults.innerHTML = '<p style="text-align:center;padding:20px;">🤖 Analizando factura con IA...</p>';
+        ocrResults.innerHTML = '<p style="text-align:center;padding:20px;font-size:16px;">🤖 Analizando factura con IA...</p>';
         
         await processReceiptOCR(event.target.result);
       };
@@ -24,90 +23,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function processReceiptOCR(base64Image) {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const imageData = base64Image.split(',')[1];
+    
+    const response = await fetch(SCRIPT_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CONFIG.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/jpeg',
-                data: base64Image.split(',')[1]
-              }
-            },
-            {
-              type: 'text',
-              text: `Analiza este recibo/factura y extrae TODOS los artículos comprados.
-              
-Responde SOLO con un JSON válido con este formato exacto:
-{
-  "items": [
-    {
-      "name": "nombre del artículo",
-      "amount": 99.99,
-      "category": "categoría"
-    }
-  ]
-}
-
-Las categorías disponibles son SOLO estas:
-- Supermercado (comida, bebidas, abarrotes)
-- Restaurantes (comida preparada, cafeterías)
-- Amazon (compras online)
-- Gasolina (combustible)
-- Salud (medicinas, doctor, farmacia)
-- Gym (ejercicio, deporte)
-- Ropa (ropa, zapatos, accesorios)
-- Regalos (regalos, flores)
-- Casa (renta, hogar)
-- Colegio (educación)
-- Servicios (luz, agua, internet)
-- Empleadas (servicio doméstico)
-- Mama-Reposo (casa reposo)
-- Mama-Medicinas (medicinas mamá)
-- Mantenimiento (reparaciones)
-- Viajes (transporte, hotel)
-- Otros (todo lo demás)
-
-Si no puedes leer algún artículo claramente, ponlo en Otros.
-NO incluyas totales, subtotales, IVA, descuentos o cupones.
-SOLO artículos comprados con su precio individual.`
-            }
-          ]
-        }]
+        action: 'analyzeReceipt',
+        imageBase64: imageData
       })
     });
 
-    const data = await response.json();
+    const result = await response.json();
     
-    if (data.content && data.content[0]) {
-      const text = data.content[0].text;
-      try {
-        const parsed = JSON.parse(text);
-        showLineItems(parsed.items);
-      } catch (e) {
-        // Try to extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          showLineItems(parsed.items);
-        } else {
-          alert('❌ No se pudo procesar la factura. Intenta con mejor iluminación.');
-        }
-      }
+    if (result.items && result.items.length > 0) {
+      showLineItems(result.items);
     } else {
-      alert('❌ Error procesando imagen. Intenta de nuevo.');
+      alert('❌ No se pudo leer la factura. Intenta con mejor iluminación.');
     }
   } catch (error) {
     console.error('❌ Error en OCR:', error);
