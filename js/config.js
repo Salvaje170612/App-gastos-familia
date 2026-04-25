@@ -1,35 +1,21 @@
 const CONFIG = {
-  // ========== GOOGLE CLOUD ==========
-  GOOGLE_API_KEY: 'AIzaSyDuptObMGsVgNdH-kuY0oiyAWIxaRoSCQw',  // ← your Google Cloud API key
-  GOOGLE_CLIENT_ID: '',
+  // Google Cloud
+  GOOGLE_API_KEY: 'AIzaSyDuptObMGsVgNdH-kuY0oiyAWIxaRoSCQw',
   
-  // ========== GOOGLE SHEETS ==========
-  SPREADSHEET_ID: '1MkIrZNQ4jBhWIgd8IAOi-e30fMo0tj65IYOROqBcupg',  // ← your Spreadsheet ID
+  // Google Sheets
+  SPREADSHEET_ID: '1MkIrZNQ4jBhWIgd8IAOi-e30fMo0tj65IYOROqBcupg',
   
-  // ========== VISION API ==========
+  // Vision API
   VISION_API_ENDPOINT: 'https://vision.googleapis.com/v1/images:annotate',
+
+  // Anthropic AI
+  ANTHROPIC_API_KEY: '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',
   
-  // ========== FIREBASE ==========
-  FIREBASE_CONFIG: {
-    apiKey: "AIzaSyDRLEw8W-GcYCUaEeIDLsvPGN79zegZaO0",  // ← Firebase API key
-    authDomain: "app-gastos-familia-f5c8b.firebaseapp.com",
-    projectId: "app-gastos-familia-f5c8b",
-    storageBucket: "app-gastos-familia-f5c8b.firebasestorage.app",
-    messagingSenderId: "72954833295",
-    appId: "1:72954833295:web:c48291b0b4203ae3f4c3fa"
-  },
-  
-  // ========== USUARIOS PERMITIDOS ==========
-  ALLOWED_USERS: {
-    admin: 'Carlosrojasgirao@gmail.com',   // ← your dad's Gmail
-    user: 'Catherineberaun@gmail.com'     // ← your mom's Gmail
-  },
-  
-  // ========== CONSTANTES ==========
+  // Constantes
   USD_RATE: 18.8,
   MONTHLY_INCOME: 450000,
   
-  // ========== PRESUPUESTOS ==========
+  // Presupuestos
   DEFAULT_BUDGETS: {
     'Casa': 160500,
     'Colegio': 120000,
@@ -46,27 +32,27 @@ const CONFIG = {
     'Ropa': 3000,
     'Regalos': 3000,
     'Mantenimiento': 5000,
+    'Viajes': 0,
     'Otros': 5000
   },
   
-  // ========== CATEGORÍAS ==========
   CATEGORIES: [
-    { value: 'Casa', label: '🏠 Casa - Renta', type: 'fixed' },
-    { value: 'Colegio', label: '🎓 Colegio Greengates', type: 'fixed' },
-    { value: 'Mama-Reposo', label: '💝 Mamá - Casa Reposo', type: 'fixed' },
-    { value: 'Mama-Medicinas', label: '💊 Mamá - Medicinas', type: 'fixed' },
-    { value: 'Empleadas', label: '👥 Empleadas', type: 'fixed' },
-    { value: 'Servicios', label: '💡 Servicios', type: 'fixed' },
-    { value: 'Supermercado', label: '🛒 Supermercado/Comida', type: 'variable' },
-    { value: 'Restaurantes', label: '🍽️ Restaurantes', type: 'variable' },
-    { value: 'Amazon', label: '📦 Amazon', type: 'variable' },
-    { value: 'Gasolina', label: '⛽ Gasolina', type: 'variable' },
-    { value: 'Salud', label: '🏥 Salud/Doctor', type: 'variable' },
-    { value: 'Gym', label: '💪 Gym/Actividades', type: 'variable' },
-    { value: 'Ropa', label: '👗 Ropa/Personal', type: 'variable' },
-    { value: 'Regalos', label: '🎁 Regalos', type: 'variable' },
-    { value: 'Mantenimiento', label: '🔧 Mantenimiento', type: 'variable' },
-    { value: 'Viajes', label: '✈️ Viajes', type: 'variable' },
-    { value: 'Otros', label: '📌 Otros', type: 'variable' }
+    { value: 'Casa', label: '🏠 Casa - Renta' },
+    { value: 'Colegio', label: '🎓 Colegio Greengates' },
+    { value: 'Mama-Reposo', label: '💝 Mamá - Casa Reposo' },
+    { value: 'Mama-Medicinas', label: '💊 Mamá - Medicinas' },
+    { value: 'Empleadas', label: '👥 Empleadas' },
+    { value: 'Servicios', label: '💡 Servicios' },
+    { value: 'Supermercado', label: '🛒 Supermercado/Comida' },
+    { value: 'Restaurantes', label: '🍽️ Restaurantes' },
+    { value: 'Amazon', label: '📦 Amazon' },
+    { value: 'Gasolina', label: '⛽ Gasolina' },
+    { value: 'Salud', label: '🏥 Salud/Doctor' },
+    { value: 'Gym', label: '💪 Gym/Actividades' },
+    { value: 'Ropa', label: '👗 Ropa/Personal' },
+    { value: 'Regalos', label: '🎁 Regalos' },
+    { value: 'Mantenimiento', label: '🔧 Mantenimiento' },
+    { value: 'Viajes', label: '✈️ Viajes' },
+    { value: 'Otros', label: '📌 Otros' }
   ]
 };

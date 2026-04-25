@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const img = document.getElementById('previewImage');
         img.src = event.target.result;
         img.style.display = 'block';
+        
+        // Show loading message
+        const ocrResults = document.getElementById('ocrResults');
+        ocrResults.style.display = 'block';
+        ocrResults.innerHTML = '<p style="text-align:center;padding:20px;">🤖 Analizando factura con IA...</p>';
+        
         await processReceiptOCR(event.target.result);
       };
       reader.readAsDataURL(file);
@@ -17,135 +23,108 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function processReceiptOCR(base64Image) {
-  const requestBody = {
-    requests: [{
-      image: { content: base64Image.split(',')[1] },
-      features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
-    }]
-  };
-
   try {
-    const response = await fetch(
-      `${CONFIG.VISION_API_ENDPOINT}?key=${CONFIG.GOOGLE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      }
-    );
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CONFIG.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Image.split(',')[1]
+              }
+            },
+            {
+              type: 'text',
+              text: `Analiza este recibo/factura y extrae TODOS los artículos comprados.
+              
+Responde SOLO con un JSON válido con este formato exacto:
+{
+  "items": [
+    {
+      "name": "nombre del artículo",
+      "amount": 99.99,
+      "category": "categoría"
+    }
+  ]
+}
+
+Las categorías disponibles son SOLO estas:
+- Supermercado (comida, bebidas, abarrotes)
+- Restaurantes (comida preparada, cafeterías)
+- Amazon (compras online)
+- Gasolina (combustible)
+- Salud (medicinas, doctor, farmacia)
+- Gym (ejercicio, deporte)
+- Ropa (ropa, zapatos, accesorios)
+- Regalos (regalos, flores)
+- Casa (renta, hogar)
+- Colegio (educación)
+- Servicios (luz, agua, internet)
+- Empleadas (servicio doméstico)
+- Mama-Reposo (casa reposo)
+- Mama-Medicinas (medicinas mamá)
+- Mantenimiento (reparaciones)
+- Viajes (transporte, hotel)
+- Otros (todo lo demás)
+
+Si no puedes leer algún artículo claramente, ponlo en Otros.
+NO incluyas totales, subtotales, IVA, descuentos o cupones.
+SOLO artículos comprados con su precio individual.`
+            }
+          ]
+        }]
+      })
+    });
+
     const data = await response.json();
-    if (data.responses && data.responses[0].textAnnotations) {
-      const fullText = data.responses[0].textAnnotations[0].description;
-      console.log('OCR TEXT:', fullText);
-      const items = parseReceiptItems(fullText);
-      console.log('ITEMS FOUND:', items);
-      showLineItems(items);
+    
+    if (data.content && data.content[0]) {
+      const text = data.content[0].text;
+      try {
+        const parsed = JSON.parse(text);
+        showLineItems(parsed.items);
+      } catch (e) {
+        // Try to extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          showLineItems(parsed.items);
+        } else {
+          alert('❌ No se pudo procesar la factura. Intenta con mejor iluminación.');
+        }
+      }
     } else {
-      alert('❌ No se pudo leer texto. Intenta con mejor iluminación.');
+      alert('❌ Error procesando imagen. Intenta de nuevo.');
     }
   } catch (error) {
     console.error('❌ Error en OCR:', error);
-    alert('Error procesando imagen');
+    alert('Error procesando imagen: ' + error.message);
   }
-}
-
-function guessCategory(itemName) {
-  const name = itemName.toLowerCase();
-  if (name.match(/hambur|fresa|uva|verdura|fruta|pollo|carne|leche|queso|jamon|pan|tortilla|cereal|cafe|arroz|frijol|atun|sopa|galleta|chocolate|dulce|candy|snack|botana|pretzel|brioche|bollo|agua|jugo|refresco|yogurt|pepsi|coca|walmart|super|costco|soriana|chedraui/)) return 'Supermercado';
-  if (name.match(/flor|flores|regalo|regalos|present|bouquet/)) return 'Regalos';
-  if (name.match(/gasolina|gas|pemex|combustible|diesel/)) return 'Gasolina';
-  if (name.match(/restaurant|taco|pizza|burger|sushi|comida|almuerzo|cena|desayuno|coffee/)) return 'Restaurantes';
-  if (name.match(/amazon|envio|shipping|delivery|paquete/)) return 'Amazon';
-  if (name.match(/doctor|medico|medicina|farmacia|hospital|clinica|pastilla|vitamina|minoxidil|protein|vital/)) return 'Salud';
-  if (name.match(/gym|ejercicio|deporte|sport|fitness/)) return 'Gym';
-  if (name.match(/ropa|camisa|pantalon|zapato|vestido|playera|blusa|conjunto|hurley|short|dama|cabal/)) return 'Ropa';
-  if (name.match(/luz|internet|telefono|cable|electricidad/)) return 'Servicios';
-  if (name.match(/colegio|escuela|school|utiles|libro|cuaderno/)) return 'Colegio';
-  return 'Otros';
-}
-
-function parseReceiptItems(text) {
-  const lines = text.split('\n').filter(l => l.trim());
-  const items = [];
-  
-  const skipWords = ['total', 'subtotal', 'iva', 'tax', 'cambio', 'efectivo', 'tarjeta', 'ticket', 'folio', 'fecha', 'gracias', 'rfc', 'tel', 'direccion', 'calle', 'col', 'cp', 'descuento', 'cupon'];
-
-  // First try: same line format
-  for (const line of lines) {
-    const match = line.trim().match(/^(.+?)\s+(\d{1,6}[.,]\d{2})\s*[A-Za-z*-]?\s*$/);
-    if (match) {
-      const name = match[1].trim();
-      const amount = parseFloat(match[2].replace(',', '.'));
-      const nameLower = name.toLowerCase();
-      const isSkip = skipWords.some(w => nameLower.includes(w));
-      if (!isSkip && amount > 0 && amount < 50000) {
-        const cleanName = name.replace(/^\d{4,}\s+/, '').trim();
-        items.push({
-          name: cleanName,
-          amount: amount,
-          category: guessCategory(cleanName),
-          source: 'Familiar'
-        });
-      }
-    }
-  }
-
-  // Second try: split format (names on top, prices on bottom)
-  if (items.length === 0) {
-    const nameLines = [];
-    const priceLines = [];
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      const priceOnly = trimmed.match(/^0*(\d{1,6}[.,]\d{2})\s*[A-Za-z*-]?\s*$/);
-      if (priceOnly) {
-        const amount = parseFloat(priceOnly[1].replace(',', '.'));
-        if (amount > 0) priceLines.push(amount);
-      } else {
-        const nameLower = trimmed.toLowerCase();
-        const isSkip = skipWords.some(w => nameLower.includes(w));
-        if (!isSkip && trimmed.length > 2) {
-          const cleanName = trimmed.replace(/^\d{4,}\s+/, '').trim();
-          if (cleanName.length > 1) nameLines.push(cleanName);
-        }
-      }
-    }
-
-    const count = Math.min(nameLines.length, priceLines.length);
-    for (let i = 0; i < count; i++) {
-      items.push({
-        name: nameLines[i],
-        amount: priceLines[i],
-        category: guessCategory(nameLines[i]),
-        source: 'Familiar'
-      });
-    }
-  }
-
-  if (items.length === 0) {
-    const totalMatch = text.match(/total[\s:$]*(\d+\.?\d{0,2})/i);
-    if (totalMatch) {
-      items.push({
-        name: 'Gasto de factura',
-        amount: parseFloat(totalMatch[1]),
-        category: 'Otros',
-        source: 'Familiar'
-      });
-    }
-  }
-
-  return items;
 }
 
 function showLineItems(items) {
   const ocrResults = document.getElementById('ocrResults');
   const cameraContainer = document.querySelector('.camera-container');
   cameraContainer.style.display = 'none';
+  
   const categories = ['Casa', 'Colegio', 'Mama-Reposo', 'Mama-Medicinas', 'Empleadas', 'Servicios', 'Supermercado', 'Restaurantes', 'Amazon', 'Gasolina', 'Salud', 'Gym', 'Ropa', 'Regalos', 'Mantenimiento', 'Viajes', 'Otros'];
 
   ocrResults.style.display = 'block';
   ocrResults.innerHTML = `
-    <h3 style="margin-bottom:16px;">🧾 Artículos Detectados (${items.length})</h3>
+    <h3 style="margin-bottom:16px;">🤖 Artículos Detectados por IA (${items.length})</h3>
     <div id="lineItemsList">
       ${items.map((item, i) => `
         <div style="background:white;padding:12px;border-radius:10px;margin-bottom:10px;border:1px solid #E2E8F0;">
