@@ -9,7 +9,7 @@ const CONFIG = {
   VISION_API_ENDPOINT: 'https://vision.googleapis.com/v1/images:annotate',
 
   // Anthropic AI
-  ANTHROPIC_API_KEY: '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',
+  ANTHROPIC_API_KEY: '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',
   
   // Constantes
   USD_RATE: 18.8,
