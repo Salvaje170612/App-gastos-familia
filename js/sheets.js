@@ -1,4 +1,4 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxOkDxeP184EIDQo1t3kYaYic1Xgcu5i_fccL4MYyQXSF-6k2qK6u3Fgdr6gcLmQY4Tag/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySKITedSzjdDvRugwSj-NXX6i1D0-FXqcZKRi6so7nwCpAtfowtw5s_5dqnpF2bXjQ8g/exec';
 
 async function loadSheetsAPI() {
   console.log('✅ Google Sheets API cargada');
