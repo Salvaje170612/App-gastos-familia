@@ -14,16 +14,33 @@ document.addEventListener('DOMContentLoaded', function() {
         ocrResults.style.display = 'block';
         ocrResults.innerHTML = '<p style="text-align:center;padding:20px;font-size:16px;">🤖 Analizando factura con IA...</p>';
         
-        await processReceiptOCR(event.target.result);
+        // Wait for image to load before compressing
+        img.onload = async function() {
+          await processReceiptOCR(img);
+        };
+        
+        // If already loaded
+        if (img.complete) {
+          await processReceiptOCR(img);
+        }
       };
       reader.readAsDataURL(file);
     });
   }
 });
 
-async function processReceiptOCR(base64Image) {
+async function processReceiptOCR(imgEl) {
   try {
-    const imageData = base64Image.split(',')[1];
+    // Compress image before sending
+    const canvas = document.createElement('canvas');
+    const maxSize = 800;
+    const ratio = Math.min(maxSize / imgEl.naturalWidth, maxSize / imgEl.naturalHeight, 1);
+    canvas.width = imgEl.naturalWidth * ratio;
+    canvas.height = imgEl.naturalHeight * ratio;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+    const compressed = canvas.toDataURL('image/jpeg', 0.7);
+    const imageData = compressed.split(',')[1];
     
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
