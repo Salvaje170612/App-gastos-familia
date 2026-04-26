@@ -14,13 +14,11 @@ document.addEventListener('DOMContentLoaded', function() {
         ocrResults.style.display = 'block';
         ocrResults.innerHTML = '<p style="text-align:center;padding:20px;font-size:16px;">🤖 Analizando factura con IA...</p>';
         
-        // Wait for image to load before compressing
         img.onload = async function() {
           await processReceiptOCR(img);
         };
         
-        // If already loaded
-        if (img.complete) {
+        if (img.complete && img.naturalWidth > 0) {
           await processReceiptOCR(img);
         }
       };
@@ -31,16 +29,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function processReceiptOCR(imgEl) {
   try {
-    // Compress image before sending
     const canvas = document.createElement('canvas');
-    const maxSize = 800;
+    const maxSize = 400;
     const ratio = Math.min(maxSize / imgEl.naturalWidth, maxSize / imgEl.naturalHeight, 1);
     canvas.width = imgEl.naturalWidth * ratio;
     canvas.height = imgEl.naturalHeight * ratio;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
-    const compressed = canvas.toDataURL('image/jpeg', 0.7);
+    const compressed = canvas.toDataURL('image/jpeg', 0.4);
     const imageData = compressed.split(',')[1];
+    
+    console.log('Image size:', imageData.length);
     
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -51,9 +50,12 @@ async function processReceiptOCR(imgEl) {
     });
 
     const result = await response.json();
+    console.log('OCR result:', result);
     
     if (result.items && result.items.length > 0) {
       showLineItems(result.items);
+    } else if (result.error) {
+      alert('❌ Error: ' + result.error);
     } else {
       alert('❌ No se pudo leer la factura. Intenta con mejor iluminación.');
     }
