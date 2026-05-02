@@ -30,13 +30,13 @@ document.addEventListener('DOMContentLoaded', function() {
 async function processReceiptOCR(imgEl) {
   try {
     const canvas = document.createElement('canvas');
-    const maxSize = 400;
+    const maxSize = 1200;
     const ratio = Math.min(maxSize / imgEl.naturalWidth, maxSize / imgEl.naturalHeight, 1);
     canvas.width = imgEl.naturalWidth * ratio;
     canvas.height = imgEl.naturalHeight * ratio;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
-    const compressed = canvas.toDataURL('image/jpeg', 0.4);
+    const compressed = canvas.toDataURL('image/jpeg', 0.6);
     const imageData = compressed.split(',')[1];
     
     console.log('Image size:', imageData.length);
