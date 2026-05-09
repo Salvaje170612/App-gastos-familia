@@ -9,15 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const img = document.getElementById('previewImage');
         img.src = event.target.result;
         img.style.display = 'block';
-        
-        const ocrResults = document.getElementById('ocrResults');
-        ocrResults.style.display = 'block';
-        ocrResults.innerHTML = '<p style="text-align:center;padding:20px;font-size:16px;">🤖 Analizando factura con IA...</p>';
-        
+
         img.onload = async function() {
           await processReceiptOCR(img);
         };
-        
+
         if (img.complete && img.naturalWidth > 0) {
           await processReceiptOCR(img);
         }
@@ -27,8 +23,49 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+function showLoadingPopup(message) {
+  const existing = document.getElementById('loadingPopup');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'loadingPopup';
+  popup.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.6);z-index:99999;
+    display:flex;align-items:center;justify-content:center;
+  `;
+  popup.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:32px 40px;text-align:center;max-width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="font-size:48px;margin-bottom:16px;">🤖</div>
+      <div style="font-size:16px;font-weight:700;color:#1E3A8A;margin-bottom:8px;">${message}</div>
+      <div style="font-size:13px;color:#718096;">Esto puede tardar unos segundos...</div>
+      <div style="margin-top:20px;display:flex;justify-content:center;gap:8px;">
+        <div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate;"></div>
+        <div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate 0.2s;"></div>
+        <div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate 0.4s;"></div>
+      </div>
+    </div>
+  `;
+
+  if (!document.getElementById('loadingStyle')) {
+    const style = document.createElement('style');
+    style.id = 'loadingStyle';
+    style.textContent = '@keyframes bounce{0%{transform:translateY(0);}100%{transform:translateY(-10px);}}';
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(popup);
+}
+
+function hideLoadingPopup() {
+  const popup = document.getElementById('loadingPopup');
+  if (popup) popup.remove();
+}
+
 async function processReceiptOCR(imgEl) {
   try {
+    showLoadingPopup('🧾 Analizando factura con IA...');
+
     const canvas = document.createElement('canvas');
     const maxSize = 1200;
     const ratio = Math.min(maxSize / imgEl.naturalWidth, maxSize / imgEl.naturalHeight, 1);
@@ -38,9 +75,7 @@ async function processReceiptOCR(imgEl) {
     ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
     const compressed = canvas.toDataURL('image/jpeg', 0.6);
     const imageData = compressed.split(',')[1];
-    
-    console.log('Image size:', imageData.length);
-    
+
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({
@@ -50,8 +85,8 @@ async function processReceiptOCR(imgEl) {
     });
 
     const result = await response.json();
-    console.log('OCR result:', result);
-    
+    hideLoadingPopup();
+
     if (result.items && result.items.length > 0) {
       showLineItems(result.items);
     } else if (result.error) {
@@ -60,6 +95,7 @@ async function processReceiptOCR(imgEl) {
       alert('❌ No se pudo leer la factura. Intenta con mejor iluminación.');
     }
   } catch (error) {
+    hideLoadingPopup();
     console.error('❌ Error en OCR:', error);
     alert('Error procesando imagen: ' + error.message);
   }
@@ -69,7 +105,7 @@ function showLineItems(items) {
   const ocrResults = document.getElementById('ocrResults');
   const cameraContainer = document.querySelector('.camera-container');
   cameraContainer.style.display = 'none';
-  
+
   const categories = ['Casa', 'Colegio', 'Mama-Reposo', 'Mama-Medicinas', 'Empleadas', 'Servicios', 'Supermercado', 'Restaurantes', 'Amazon', 'Gasolina', 'Salud', 'Gym', 'Ropa', 'Regalos', 'Mantenimiento', 'Viajes', 'Otros'];
 
   ocrResults.style.display = 'block';
@@ -102,6 +138,7 @@ function showLineItems(items) {
 
 async function saveAllLineItems(count) {
   const user = window.currentUser || null;
+  showLoadingPopup('💾 Guardando gastos...');
   let saved = 0;
   for (let i = 0; i < count; i++) {
     const name = document.getElementById(`itemName_${i}`)?.value;
@@ -119,6 +156,7 @@ async function saveAllLineItems(count) {
       if (success) saved++;
     }
   }
+  hideLoadingPopup();
   moneyRain();
   cancelOCR();
   await loadData();
