@@ -29,7 +29,7 @@ function showLoadingPopup(message) {
 
   const popup = document.createElement('div');
   popup.id = 'loadingPopup';
-  popup.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  popup.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999999;display:flex;align-items:center;justify-content:center;';
   popup.innerHTML = '<div style="background:white;border-radius:20px;padding:32px 40px;text-align:center;max-width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.3);"><div style="font-size:48px;margin-bottom:16px;">🤖</div><div style="font-size:16px;font-weight:700;color:#1E3A8A;margin-bottom:8px;">' + message + '</div><div style="font-size:13px;color:#718096;">Esto puede tardar unos segundos...</div><div style="margin-top:20px;display:flex;justify-content:center;gap:8px;"><div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate;"></div><div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate 0.2s;"></div><div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate 0.4s;"></div></div></div>';
 
   if (!document.getElementById('loadingStyle')) {
