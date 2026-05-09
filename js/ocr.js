@@ -28,16 +28,7 @@ function showLoadingPopup(message) {
   }
   const popup = document.createElement('div');
   popup.id = 'loadingPopup';
-  popup.style.position = 'fixed';
-  popup.style.top = '0';
-  popup.style.left = '0';
-  popup.style.width = '100%';
-  popup.style.height = '100%';
-  popup.style.background = 'rgba(0,0,0,0.7)';
-  popup.style.zIndex = '2147483647';
-  popup.style.display = 'flex';
-  popup.style.alignItems = 'center';
-  popup.style.justifyContent = 'center';
+  popup.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:2147483647;display:flex;align-items:center;justify-content:center;';
   popup.innerHTML = '<div style="background:white;border-radius:20px;padding:32px 40px;text-align:center;max-width:280px;"><div style="font-size:48px;margin-bottom:16px;">🤖</div><div style="font-size:16px;font-weight:700;color:#1E3A8A;margin-bottom:8px;">' + message + '</div><div style="font-size:13px;color:#718096;margin-bottom:20px;">Por favor espera...</div><div style="display:flex;justify-content:center;gap:8px;"><div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate;"></div><div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate 0.2s;"></div><div style="width:10px;height:10px;background:#667eea;border-radius:50%;animation:bounce 0.6s infinite alternate 0.4s;"></div></div></div>';
   document.body.appendChild(popup);
 }
@@ -70,7 +61,7 @@ async function processReceiptOCR(imgEl) {
     } else if (result.error) {
       alert('Error: ' + result.error);
     } else {
-      alert('No se pudo leer la factura. Intenta con mejor iluminacion.');
+      alert('No se pudo leer la factura.');
     }
   } catch (error) {
     hideLoadingPopup();
@@ -92,21 +83,37 @@ function showLineItems(items) {
 }
 
 async function saveAllLineItems(count) {
-  showLoadingPopup('Guardando gastos...');
-  await new Promise(r => setTimeout(r, 100));
   const user = window.currentUser || null;
+  const items = [];
   for (let i = 0; i < count; i++) {
-    const name = document.getElementById('itemName_' + i) ? document.getElementById('itemName_' + i).value : null;
-    const amount = parseFloat(document.getElementById('itemAmount_' + i) ? document.getElementById('itemAmount_' + i).value : 0);
-    const category = document.getElementById('itemCategory_' + i) ? document.getElementById('itemCategory_' + i).value : null;
-    const source = document.getElementById('itemSource_' + i) ? document.getElementById('itemSource_' + i).value : null;
-    if (name && amount && category) {
-      await addExpense({ user: user.email, name, amount, category, source, date: new Date().toISOString().split('T')[0], photo_url: null });
+    const nameEl = document.getElementById('itemName_' + i);
+    const amountEl = document.getElementById('itemAmount_' + i);
+    const categoryEl = document.getElementById('itemCategory_' + i);
+    const sourceEl = document.getElementById('itemSource_' + i);
+    if (nameEl && amountEl && categoryEl) {
+      items.push({
+        user: user.email,
+        name: nameEl.value,
+        amount: parseFloat(amountEl.value),
+        category: categoryEl.value,
+        source: sourceEl ? sourceEl.value : 'Familiar',
+        date: new Date().toISOString().split('T')[0],
+        photo_url: null
+      });
     }
   }
+  
+  cancelOCR();
+  showLoadingPopup('Guardando gastos...');
+  
+  for (const expense of items) {
+    if (expense.name && expense.amount && expense.category) {
+      await addExpense(expense);
+    }
+  }
+  
   hideLoadingPopup();
   moneyRain();
-  cancelOCR();
   await loadData();
   updateDashboard();
 }
